@@ -1,13 +1,22 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
-const primary = process.env.PRIMARY_CONN_STR;
-if (!primary) {
+
+// Load environment variables from .env file
+dotenv.config();
+
+const mongodb_Url = process.env.MONGODB_URI;
+
+if (!mongodb_Url) {
   throw new Error("One or more connection strings are missing.");
 }
-export const primaryConnection = mongoose.createConnection(primary);
-primaryConnection.on("connected", () => {
-  console.log("PRIMARY DB connected");
-});
 
-primaryConnection.on("error", (err: any) => {
-  console.error("Error connecting to PRIMARY DB:", err);
-});
+const db_connect = async () => {
+  try {
+    await mongoose.connect(mongodb_Url, {});
+    console.log("Database connected successfully!");
+  } catch (err: any) {
+    console.log("Error connecting to database:", err.message);
+  }
+};
+
+export default db_connect;

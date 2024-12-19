@@ -1,12 +1,23 @@
 import { Router } from "express";
 import MovieController from "../controllers/movie-controller";
+import repositoriesLoader from "@/loaders/repositoriesLoader";
+import servicesLoader from "@/loaders/servicesLoader";
+import upload from "@/middlewares/multer";
+import verifyApiKey from "@/middlewares/verifyApiKey";
 
-const movieController = new MovieController();
+const repositories = repositoriesLoader();
+const services = servicesLoader(repositories);
+
+const movieController = new MovieController(services.movieService); // Pass movieService here
 
 const movieRoute = () => {
   const router = Router();
-  // Correctly assign the bannerCreate method to the GET route
-  router.get("/", movieController.bannerCreate.bind(movieController));
+  router.post(
+    "/",
+    verifyApiKey,
+    upload.array("images", 10),
+    movieController.create.bind(movieController)
+  ); // Use POST for create
   return router;
 };
 

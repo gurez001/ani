@@ -1,3 +1,5 @@
 import app from "./app";
-
-app.listen(9000,()=>console.log('server start'))
+import db_connect from "./config/db";
+db_connect();
+const Port = process.env.PORT || 9000;
+app.listen(Port, () => console.log(`Server stattingon port ${Port}`));
