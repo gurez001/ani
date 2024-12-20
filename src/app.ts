@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import movieRoute from "./api/routes/movie-route";
 import cors from "cors";
+import errorMiddleware from "./middlewares/error";
 const app = express();
 
 app.use(
@@ -30,5 +31,6 @@ app.use(cookieParser());
 
 // Register routes
 app.use("/api/v1/anime", movieRoute());
-
+//--------------- allmiddleware
+app.use(errorMiddleware);
 export default app;

@@ -4,56 +4,30 @@ import { generateRandomId } from "@/utils/generateRandomId";
 import { NextFunction } from "express";
 const imageRepository = new ImageRepository();
 class MovieRepositorie {
-  private async genrateId(
-    uuid: string,
-    randomId: string,
-    number: number
-  ): Promise<string> {
+  private async generateId(uuid: string, randomId: string, number: number): Promise<string> {
     return `mov_id_${randomId.toLowerCase()}_${uuid}${number}`;
   }
-  // Reusable function to get the next post number
+
   private async getNextNumber(): Promise<number> {
-    const count = await Movie.countDocuments();
-    return count + 1;
+    return await Movie.estimatedDocumentCount() + 1; // Faster than countDocuments
   }
-  async create(
-    data: any,
-    image_data: any,
-    seo: any,
-    user_id: string,
-    next: NextFunction
-  ) {
+
+  async create(data: any, imageData: any, seo: any, userId: string, next: NextFunction) {
     try {
       const randomId = generateRandomId();
       const {
-        title,
-        content,
-        duration,
-        airedFrom,
-        airedTo,
-        score,
-        rating,
-        ageRating,
-        publish_status,
-        description,
-        uuid,
-        categorie,
-        status,
-        metaCanonicalUrl,
+        title, content, duration, airedFrom, airedTo, score, rating, ageRating, publish_status,
+        description, uuid, categorie, status, metaCanonicalUrl,
       } = data;
-      const imageIds = image_data.map((item: any) => item._id);
 
-      // Get next post number
+      const imageIds = imageData.map((item: any) => item._id);
       const counter = await this.getNextNumber();
+      const movId = await this.generateId(uuid, randomId, counter);
 
-      // Generate post ID
-      const catId = await this.genrateId(uuid, randomId, counter);
-
-      // Prepare data to be saved
       const newPostData = {
         _no: counter,
         title,
-        mov_id:catId,
+        mov_id: movId,
         content,
         status,
         duration: Number(duration),
@@ -64,47 +38,22 @@ class MovieRepositorie {
         ageRating,
         publish_status,
         description,
-        categorie: categorie
-          ? categorie.split(",")
-          : ["6741bd2663fa4c1a8dd7548b"], // Default categorie ID
+        categorie: categorie?.split(",") || ["default-category-id"],
         slug: metaCanonicalUrl.toLowerCase(),
         feature_image: imageIds[0],
         seo: seo?._id,
-        post_id: catId,
-        audit_log: user_id,
+        audit_log: userId,
       };
 
-      // Create and save the new post
-      const result = new Movie(newPostData);
-      const savedPost: any = await result.save(); // Save the post first to get the post with populated fields
-
-      // Now populate the categories after the post is saved
-      await savedPost.populate("categorie");
-      // Prepare image update promises for updating the displayed path and activating the image
-
-      if (imageIds) {
-        const updateData = {
-          displayedpath: `${savedPost?.categorie[0]?.slug.toLowerCase()}/${newPostData.slug.toLowerCase()}`, // Set the displayed path to the category slug
-          is_active: true, // Mark the image as active
-        };
-        const oldImageId = "";
-        await imageRepository.updateImage(
-          imageIds,
-          "1",
-          oldImageId,
-          updateData,
-          next
-        );
-      }
-      return await savedPost;
+      const result = await new Movie(newPostData).save();
+      return result; // Return directly after save
     } catch (error: any) {
-      throw new Error(`Error creating: ${error.message}`);
+      throw new Error(`Error creating movie: ${error.message}`);
     }
   }
 
-  // Find post by URL
   async findByUrl(url: string) {
-    return await Movie.findOne({ slug: url });
+    return Movie.findOne({ slug: url });
   }
 }
 
